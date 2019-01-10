@@ -155,7 +155,6 @@ public:
             m_listen_backlog = rhs.m_listen_backlog;
             m_reuse_addr = rhs.m_reuse_addr;
             m_state = rhs.m_state;
-
             rhs.m_io_service = NULL;
             rhs.m_external_io_service = false;
             rhs.m_acceptor = NULL;
@@ -860,31 +859,29 @@ protected:
 
         tcon->set_uri(u);
 
-        std::string proxy = tcon->get_proxy();
+        uri_ptr proxy = tcon->get_proxy();
         std::string host;
         std::string port;
 
-        if (proxy.empty()) {
+        if (!proxy) {
             host = u->get_host();
             port = u->get_port_str();
         } else {
             lib::error_code ec;
 
-            uri_ptr pu = lib::make_shared<uri>(proxy);
-
-            if (!pu->get_valid()) {
+            if (!proxy->get_valid()) {
                 cb(make_error_code(error::proxy_invalid));
                 return;
             }
 
-            ec = tcon->proxy_init(u->get_authority());
+            ec = tcon->proxy_init(u);
             if (ec) {
                 cb(ec);
                 return;
             }
 
-            host = pu->get_host();
-            port = pu->get_port_str();
+            host = proxy->get_host();
+            port = proxy->get_port_str();
         }
 
         tcp::resolver::query query(host,port);
